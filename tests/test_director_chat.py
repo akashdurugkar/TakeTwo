@@ -66,6 +66,14 @@ class DirectorChatTests(unittest.TestCase):
         self.cu.assert_not_awaited()
         self.agent.assert_awaited_once()
 
+    def test_purpose_is_retained_through_chat_and_goal_changes(self):
+        self.store.update(self.job_id, video_purpose="Product demo", target_platform="general")
+        self.assertEqual(self.send(message="Explain the workflow", goal="Help new customers").status_code, 202)
+        self.assertEqual(self.agent.call_args.kwargs["video_purpose"], "Product demo")
+        self.assertEqual(self.agent.call_args.args[2], "general")
+        self.assertEqual(self.store.get(self.job_id).video_purpose, "Product demo")
+        self.cu.assert_not_awaited()
+
     def test_goal_only_turn_and_idempotent_retry(self):
         request_id = str(uuid4())
         body = {"goal": "Product education", "request_id": request_id}

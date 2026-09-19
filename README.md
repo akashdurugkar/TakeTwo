@@ -381,6 +381,31 @@ verified binary-compatible cryptography release to avoid requiring native C++/Ru
 
 ## How it works
 
+### Video purpose and publishing platform
+
+Choose **Video purpose** independently of **Publishing platform**. Purpose options are General review,
+Product demo, Marketing / campaign, Tutorial / explainer, Presentation, Social / creator video, and
+Other. **Other** opens a required custom description (up to 200 characters). The separate goal field
+describes the result you want, for example making a product benefit clearer to first-time buyers.
+
+New requests default to **No specific platform / Other**, not Instagram. Publishing choices also
+include YouTube, Website / landing page, Instagram Reels, TikTok, YouTube Shorts, and LinkedIn Video.
+For a product demonstration on a landing page, select **Product demo** and **Website / landing page**;
+for internal content, use a custom purpose and **No specific platform / Other**.
+
+The Director and delegated specialists receive the purpose as user context, separate from extracted
+facts. Their guidance prioritizes the stated purpose without automatically imposing social hooks,
+hashtags or virality advice. The purpose is stored with the job and reused by Director chat, including
+after a goal change. It appears in the report and PDF. Changing upload-form controls does not rewrite
+an existing report. Legacy jobs without a purpose display General review and retain their original
+platform. Both multipart analysis and staged-upload completion accept `video_purpose`; custom text
+is bounded to 200 characters. Recommendation quality remains model-dependent.
+
+The backend must load the updated schema. Refreshing only the browser is insufficient for an older
+server; the form blocks new submissions to older instances instead of silently dropping the purpose.
+Use the instance started by `python run.py` at port 8000, or restart your chosen instance after
+exporting reports you need to keep. Restarting clears the in-memory job store.
+
 **Stage 1 — Content Understanding.** On the first analysis the app creates a custom video analyzer
 (`app/cu/analyzer_schema.py`) on top of `prebuilt-video`. Its field schema is what turns a
 generic video description into creative signals: `Hook`, `HookStrength`, `Pacing`, `Mood`,

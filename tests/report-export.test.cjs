@@ -255,3 +255,18 @@ test("long shot descriptions, scene rows and captions can span pages without los
   assert.ok(pdf.endsWith("%%EOF\n"));
   assert.ok((pdf.match(/\/Type \/Page\b/g) || []).length > 5);
 });
+
+test("PDF keeps the video purpose separate from its publishing platform", () => {
+  const job = fixture();
+  job.video_purpose = "Product demo";
+  job.target_platform = "general";
+  let json = JSON.stringify(buildDocument(job));
+  assert.ok(json.includes("Video purpose"));
+  assert.ok(json.includes("Product demo"));
+  assert.ok(json.includes("No specific platform / Other"));
+  job.video_purpose = "Customer onboarding";
+  job.target_platform = "website";
+  json = JSON.stringify(buildDocument(job));
+  assert.ok(json.includes("Customer onboarding"));
+  assert.ok(json.includes("Website / landing page"));
+});

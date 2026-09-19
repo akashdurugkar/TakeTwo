@@ -62,6 +62,40 @@ class ApiTests(unittest.TestCase):
         self.assertIsNone(self.analysis.call_args.kwargs["data"])
         job = self.client.get(f"/api/jobs/{response.json()['job_id']}").json()
         self.assertEqual(job["goal"], "General video review")
+        self.assertEqual(job["target_platform"], "general")
+        self.assertEqual(job["video_purpose"], "General review")
+
+    def test_video_purpose_is_separate_from_platform_and_reaches_director(self):
+        response = self.client.post("/api/analyze", data={
+            "video_url": "https://example.invalid/demo.mp4", "target_platform": "website",
+            "video_purpose": " Product demo ", "goal": "Explain the workflow",
+        })
+        self.assertEqual(response.status_code, 202)
+        job = self.client.get(f"/api/jobs/{response.json()['job_id']}").json()
+        self.assertEqual(job["video_purpose"], "Product demo")
+        self.assertEqual(job["target_platform"], "website")
+        prompt = self.agent.run.call_args.args[0]
+        self.assertIn('Video purpose (creator-provided context, not evidence): "Product demo"', prompt)
+        self.assertIn("Target platform: website", prompt)
+
+    def test_custom_purpose_and_platform_neutral_review(self):
+        response = self.client.post("/api/analyze", data={
+            "video_purpose": "Internal stakeholder update", "target_platform": "general",
+        }, files={"file": ("update.mp4", b"sample", "video/mp4")})
+        self.assertEqual(response.status_code, 202)
+        prompt = self.agent.run.call_args.args[0]
+        self.assertIn("Internal stakeholder update", prompt)
+        self.assertIn("Do not assume a social feed", prompt)
+        platforms = self.client.get("/api/platforms").json()
+        self.assertEqual(platforms["general"], "No specific platform / Other")
+        self.assertEqual(platforms["youtube"], "YouTube")
+
+    def test_oversized_purpose_is_rejected_before_analysis(self):
+        response = self.client.post("/api/analyze", data={
+            "video_url": "https://example.invalid/demo.mp4", "video_purpose": "x" * 201,
+        })
+        self.assertEqual(response.status_code, 422)
+        self.analysis.assert_not_awaited()
 
     def test_missing_configuration_is_blocked_before_analysis(self):
         with patch("app.main.get_settings", return_value=self.settings.model_copy(update={"cu_key": ""})):

@@ -210,12 +210,13 @@
     if (!job?.video_summary) throw new Error("This report has no saved video extraction to export.");
     if (!["succeeded", "failed"].includes(job.status)) throw new Error("Wait for the analysis to finish before exporting.");
     const summary = job.video_summary;
-    const platform = { instagram_reels: "Instagram Reels", youtube_shorts: "YouTube Shorts", tiktok: "TikTok", linkedin: "LinkedIn Video" }[job.target_platform] || job.target_platform || "Not specified";
+    const platform = { general: "No specific platform / Other", instagram_reels: "Instagram Reels", youtube_shorts: "YouTube Shorts", youtube: "YouTube", website: "Website / landing page", tiktok: "TikTok", linkedin: "LinkedIn Video" }[job.target_platform] || job.target_platform || "Not specified";
     const content = [
       { columns: [{ text: "TAKETWO / CREATIVE REPORT", style: "eyebrow" }, { text: exportedAt.toISOString().slice(0, 10), alignment: "right", style: "muted" }], margin: [0, 0, 0, 20] },
       paragraph("TakeTwo", { style: "title" }),
       paragraph("Video analysis & creative direction", { fontSize: 15, color: ink.muted, margin: [0, 0, 0, 18] }),
       paragraph(job.filename || "Video from URL", { bold: true, fontSize: 12 }),
+      ...fields({ video_purpose: job.video_purpose || "General review" }),
       ...(job.goal ? [paragraph(job.goal, { fontSize: 11, margin: [0, 0, 0, 12] })] : []),
       table(["DURATION", "RESOLUTION", "PLATFORM"], [[
         { text: summary.duration_ms > 0 ? `${(summary.duration_ms / 1000).toFixed(1)} s` : "Not available", fontSize: 13, bold: true },

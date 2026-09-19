@@ -314,8 +314,8 @@
       element("chat-active-goal").textContent = activeGoal;
       web.checked = false;
       chatTab.disabled = false;
-      element("chat-context").textContent = job.filename || "Video from URL";
-      element("chat-context").title = `${job.filename || "Video URL"} · ${job.analyzer_id || "Saved extraction"}`;
+      element("chat-context").textContent = `${job.filename || "Video from URL"} · ${job.video_purpose || "General review"}`;
+      element("chat-context").title = `${job.filename || "Video URL"} · ${job.video_purpose || "General review"} · ${job.analyzer_id || "Saved extraction"}`;
       status.textContent = "Loading conversation...";
       updateControls();
       load();

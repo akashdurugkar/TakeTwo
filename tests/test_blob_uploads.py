@@ -109,6 +109,27 @@ class UploadApiTests(unittest.TestCase):
         self.assertEqual(self.client.delete("/api/uploads/not-owned").status_code, 204)
         self.runner.assert_not_awaited()
 
+    def test_staged_upload_preserves_purpose_and_retry_options(self):
+        upload_id = self.start()
+        body = {"target_platform": "general", "video_purpose": "Product demo", "goal": "Explain the workflow"}
+        response = self.client.post(f"/api/uploads/{upload_id}/complete", json=body)
+        self.assertEqual(response.status_code, 202)
+        job = self.store.get(response.json()["job_id"])
+        self.assertEqual(job.target_platform, "general")
+        self.assertEqual(job.video_purpose, "Product demo")
+        self.assertEqual(self.client.post(f"/api/uploads/{upload_id}/complete", json=body).json(), response.json())
+        changed = self.client.post(f"/api/uploads/{upload_id}/complete", json={**body, "video_purpose": "Presentation"})
+        self.assertEqual(changed.status_code, 409)
+        self.runner.assert_awaited_once()
+
+    def test_staged_purpose_validation_happens_before_sealing(self):
+        upload_id = self.start()
+        for purpose in ("", "   ", "x" * 201):
+            response = self.client.post(f"/api/uploads/{upload_id}/complete", json={"video_purpose": purpose})
+            self.assertEqual(response.status_code, 422)
+        self.uploads.seal.assert_not_awaited()
+        self.runner.assert_not_awaited()
+
     def test_mismatch_failure_does_not_start_analysis(self):
         upload_id = self.start()
         self.uploads.seal.side_effect = UploadError("Uploaded size does not match")

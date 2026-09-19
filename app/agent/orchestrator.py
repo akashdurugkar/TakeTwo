@@ -153,9 +153,11 @@ async def _run_spec(
 # -- prompts ---------------------------------------------------------------
 
 
-def _context_block(summary: VideoSummary, platform: str, goal: str) -> str:
+def _context_block(summary: VideoSummary, platform: str, goal: str, video_purpose: str = "General review") -> str:
+    platform_context = "No specific platform / Other. Do not assume a social feed, vertical format, or a short-form runtime." if platform == "general" else platform
     return (
-        f"Target platform: {platform}\n"
+        f"Target platform: {platform_context}\n"
+        f"Video purpose (creator-provided context, not evidence): {json.dumps(video_purpose, ensure_ascii=False)}\n"
         f"Creator's goal: {goal.strip() or 'General video review'}\n\n"
         "=== Content Understanding analysis of the current video ===\n"
         f"{summary.to_agent_brief()}\n"
@@ -190,13 +192,14 @@ async def run_creative_team(
     allow_web_search: bool = True,
     conversation_context: str = "",
     message: str = "",
+    video_purpose: str = "General review",
 ) -> ReelPlan:
     client = build_client(settings)
     all_specs = [DIRECTOR, *SPECIALISTS]
     tracker = Tracker(all_specs, on_trace)
     on_trace(tracker.runs)
 
-    context = _context_block(summary, platform, goal)
+    context = _context_block(summary, platform, goal, video_purpose)
     if conversation_context or message:
         context += (
             "\n\n=== Director follow-up conversation ===\n"

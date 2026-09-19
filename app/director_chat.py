@@ -71,6 +71,7 @@ async def respond(store: JobStore, job: Job, turn: DirectorChatTurn, settings: S
             job.video_summary,
             job.target_platform,
             turn.goal,
+            video_purpose=job.video_purpose,
             message=turn.message,
             conversation_context=conversation_context(job, turn),
             allow_web_search=turn.use_web_search,

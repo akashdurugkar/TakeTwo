@@ -100,6 +100,7 @@ async def run_job(
             summary,
             job.target_platform,
             job.goal,
+            video_purpose=job.video_purpose,
             on_trace=on_trace,
             on_stage=on_stage,
             allow_web_search=job.use_web_search,

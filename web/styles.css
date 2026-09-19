@@ -203,6 +203,11 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-2); 
 .row { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
 .row > div { min-width: 200px; }
 .grow { flex: 1; }
+.review-context { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.review-context > div { min-width: 0; }
+.review-context .review-goal, #custom-purpose-field { grid-column: 1 / -1; }
+#report-context { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .review-context { grid-template-columns: minmax(0, 1fr); } }
 
 button {
   margin-top: 1.25rem;

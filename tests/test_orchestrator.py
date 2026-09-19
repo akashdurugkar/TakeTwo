@@ -40,6 +40,14 @@ class EditPlanContractTests(unittest.TestCase):
 
 
 class DelegationTests(unittest.IsolatedAsyncioTestCase):
+    def test_purpose_and_neutral_platform_context_are_distinct(self):
+        context = _context_block(VideoSummary(summary="Observed demonstration"), "general", "Explain clearly", "Product demo")
+        self.assertIn("No specific platform / Other", context)
+        self.assertIn("Do not assume a social feed", context)
+        self.assertIn('Video purpose (creator-provided context, not evidence): "Product demo"', context)
+        self.assertIn("Creator's goal: Explain clearly", context)
+        self.assertIn("Observed demonstration", context)
+
     def test_empty_goal_uses_general_review_not_growth_objective(self):
         for goal in ("", "   "):
             context = _context_block(VideoSummary(), "youtube_shorts", goal)

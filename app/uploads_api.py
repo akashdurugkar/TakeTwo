@@ -8,7 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.blob_uploads import UploadError
-from app.models import Platform
+from app.models import Platform, VideoPurpose
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,8 @@ class UploadRequest(BaseModel):
 
 class CompleteRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    target_platform: Platform = "instagram_reels"
+    target_platform: Platform = "general"
+    video_purpose: VideoPurpose = "General review"
     goal: str = Field("", max_length=500)
     use_web_search: bool = True
 
@@ -107,6 +108,7 @@ def create_router(get_store, get_settings, get_uploads, runner, allowed_types):
                     raise HTTPException(503, "Could not finalize the upload. Retry or cancel it.") from None
                 job = get_store().create(
                     filename=session.filename, target_platform=request.target_platform,
+                    video_purpose=request.video_purpose,
                     goal=request.goal.strip() or "General video review",
                     use_web_search=request.use_web_search and settings.web_search_enabled,
                     blob_upload_id=session.id,

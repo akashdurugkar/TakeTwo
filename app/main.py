@@ -17,7 +17,7 @@ from app.blob_uploads import uploads
 from app.uploads_api import create_router as create_upload_router
 from app.director_chat import create_router as create_chat_router
 from app.jobs import JobStore
-from app.models import Job, Platform
+from app.models import Job, Platform, VideoPurpose
 from app.pipeline import run_job
 
 logging.basicConfig(level=logging.INFO)
@@ -38,10 +38,13 @@ ALLOWED_VIDEO_TYPES = {
 ALLOWED_PLATFORMS = set(get_args(Platform))
 
 PLATFORM_NAMES = {
+    "general": "No specific platform / Other",
     "instagram_reels": "Instagram Reels",
     "tiktok": "TikTok",
     "youtube_shorts": "YouTube Shorts",
     "linkedin": "LinkedIn Video",
+    "youtube": "YouTube",
+    "website": "Website / landing page",
 }
 
 app = FastAPI(title="TakeTwo", version="1.0.0")
@@ -72,7 +75,8 @@ async def platforms() -> dict[str, str]:
 @app.post("/api/analyze", status_code=202)
 async def analyze(
     background_tasks: BackgroundTasks,
-    target_platform: Annotated[str, Form()] = "instagram_reels",
+    target_platform: Annotated[str, Form()] = "general",
+    video_purpose: Annotated[VideoPurpose, Form()] = "General review",
     goal: Annotated[str, Form()] = "",
     use_web_search: Annotated[bool, Form()] = True,
     video_url: Annotated[str, Form()] = "",
@@ -125,6 +129,7 @@ async def analyze(
         filename=filename,
         source_url=video_url,
         target_platform=target_platform,  # type: ignore[arg-type]
+        video_purpose=video_purpose,
         goal=goal.strip()[:500] or "General video review",
         use_web_search=use_web_search and settings.web_search_enabled,
     )

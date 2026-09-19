@@ -18,7 +18,7 @@ class JobStore:
         self._lock = threading.Lock()
         self._max_jobs = max_jobs
 
-    def create(self, *, filename: str = "", source_url: str = "", target_platform: Platform, goal: str, use_web_search: bool = True, blob_upload_id: str = "") -> Job:
+    def create(self, *, filename: str = "", source_url: str = "", target_platform: Platform, goal: str, use_web_search: bool = True, blob_upload_id: str = "", video_purpose: str = "General review") -> Job:
         job = Job(
             id=uuid.uuid4().hex,
             filename=filename,
@@ -26,6 +26,7 @@ class JobStore:
             blob_upload_id=blob_upload_id,
             blob_upload_active=bool(blob_upload_id),
             target_platform=target_platform,
+            video_purpose=video_purpose,
             goal=goal,
             use_web_search=use_web_search,
             stage_message="Queued.",

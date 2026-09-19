@@ -6,6 +6,8 @@ const dropzone = $("dropzone");
 const dropzoneLabel = $("dropzone-label");
 const urlInput = $("video-url");
 const platformSelect = $("platform");
+const purposeSelect = $("video-purpose");
+const customPurposeInput = $("custom-purpose");
 const goalInput = $("goal");
 const webSearchInput = $("web-search");
 const submitBtn = $("submit");
@@ -40,6 +42,8 @@ let maxBlobUploadBytes = 0;
 let uploadBusy = false;
 let uploadController = null;
 let cancelingUpload = false;
+let reviewContextAvailable = false;
+let savedReviewContext = null;
 
 function rememberJob(jobId) {
   try {
@@ -57,6 +61,7 @@ document.addEventListener("director-chat:busy", (event) => {
 
 document.addEventListener("director-chat:reextract", (event) => {
   if (event.detail.jobId !== currentJobId || chatBusy) return;
+  if (savedReviewContext) restoreReviewContext(savedReviewContext);
   goalInput.value = event.detail.goal || goalInput.value;
   form.requestSubmit();
 });
@@ -78,6 +83,27 @@ function seconds(ms) {
   return (Number(ms || 0) / 1000).toFixed(1) + "s";
 }
 
+function updatePurposeInput() {
+  const custom = purposeSelect.value === "other";
+  $("custom-purpose-field").classList.toggle("hidden", !custom);
+  customPurposeInput.required = custom;
+  customPurposeInput.disabled = !custom || uploadBusy;
+}
+
+function restoreReviewContext(job) {
+  const purpose = job.video_purpose || "General review";
+  const preset = [...purposeSelect.options].some(option => option.value !== "other" && option.value === purpose);
+  purposeSelect.value = preset ? purpose : "other";
+  customPurposeInput.value = preset ? "" : purpose;
+  platformSelect.value = job.target_platform || "general";
+  updatePurposeInput();
+}
+
+purposeSelect.addEventListener("change", () => {
+  updatePurposeInput();
+  if (purposeSelect.value === "other") customPurposeInput.focus();
+});
+
 // ---------------------------------------------------------------- bootstrap
 
 async function bootstrap() {
@@ -92,6 +118,8 @@ async function bootstrap() {
       option.value = key;
       platformSelect.appendChild(option);
     }
+    reviewContextAvailable = Object.hasOwn(platforms, "general");
+    if (reviewContextAvailable) platformSelect.value = "general";
 
     const missing = [];
     webSearchAvailable = health.web_search_enabled === true;
@@ -107,7 +135,7 @@ async function bootstrap() {
     if (missing.length) {
       healthEl.appendChild(el("span", "bad", `Not configured: ${missing.join(" · ")}. Fill in .env and restart.`));
     } else {
-      healthEl.textContent = `Ready · analyzer ${health.analyzer_id} · uploads up to ${blobUploadEnabled ? `${(maxBlobUploadBytes / 1e9).toFixed(1)} GB` : `${health.max_upload_mb} MB`}`;
+      healthEl.textContent = `Ready · TakeTwo · uploads up to ${blobUploadEnabled ? `${(maxBlobUploadBytes / 1e9).toFixed(1)} GB` : `${health.max_upload_mb} MB`}`;
     }
     try {
       const savedJob = sessionStorage.getItem("taketwo.currentJob");
@@ -159,6 +187,16 @@ form.addEventListener("submit", async (e) => {
   formError.textContent = "";
   cleanupMessage.textContent = "";
 
+  if (!reviewContextAvailable) {
+    formError.textContent = "This server is running an older version. Restart this app instance to enable video purpose and platform-neutral reviews.";
+    return;
+  }
+  const videoPurpose = purposeSelect.value === "other" ? customPurposeInput.value.trim() : purposeSelect.value;
+  if (!videoPurpose) {
+    formError.textContent = "Describe the video purpose or choose a preset.";
+    customPurposeInput.focus();
+    return;
+  }
   const file = fileInput.files[0];
   const url = urlInput.value.trim();
   if (!file && !url) {
@@ -177,6 +215,7 @@ form.addEventListener("submit", async (e) => {
   if (file) body.append("file", file);
   body.append("video_url", url);
   body.append("target_platform", platformSelect.value);
+  body.append("video_purpose", videoPurpose);
   body.append("goal", goalInput.value);
   body.append("use_web_search", String(webSearchAvailable && webSearchInput.checked));
 
@@ -191,14 +230,14 @@ form.addEventListener("submit", async (e) => {
   try {
     let payload;
     uploadBusy = true;
-    for (const control of [fileInput, urlInput, platformSelect, goalInput, webSearchInput]) control.disabled = true;
+    for (const control of [fileInput, urlInput, platformSelect, purposeSelect, customPurposeInput, goalInput, webSearchInput]) control.disabled = true;
     updateClearButton();
     if (useBlob) {
       uploadController = new AbortController();
       $("cancel-upload").classList.remove("hidden");
       $("upload-progress").classList.remove("hidden");
       payload = await window.BlobUpload.start(file, {
-        target_platform: platformSelect.value, goal: goalInput.value, use_web_search: webSearchAvailable && webSearchInput.checked,
+        target_platform: platformSelect.value, video_purpose: videoPurpose, goal: goalInput.value, use_web_search: webSearchAvailable && webSearchInput.checked,
       }, {
         signal: uploadController.signal,
         progress: (sent, total) => {
@@ -225,7 +264,8 @@ form.addEventListener("submit", async (e) => {
     formError.textContent = err.name === "AbortError" ? "Upload canceled." : err.message;
   } finally {
     uploadBusy = false;
-    for (const control of [fileInput, urlInput, platformSelect, goalInput]) control.disabled = false;
+    for (const control of [fileInput, urlInput, platformSelect, purposeSelect, goalInput]) control.disabled = false;
+    updatePurposeInput();
     webSearchInput.disabled = !webSearchAvailable;
     uploadController = null;
     $("cancel-upload").classList.add("hidden");
@@ -354,7 +394,7 @@ clearJobBtn.addEventListener("click", async () => {
   if (!confirm("Delete this local report and Director conversation, remove any remaining TakeTwo-staged upload, and clear the video selection? Your local original, externally supplied Blob URLs, and provider-side records will NOT be deleted. Storage recovery retention may apply.")) return;
 
   const jobId = currentJobId;
-  const controls = [fileInput, urlInput, goalInput, platformSelect, webSearchInput, submitBtn, clearJobBtn];
+  const controls = [fileInput, urlInput, goalInput, platformSelect, purposeSelect, customPurposeInput, webSearchInput, submitBtn, clearJobBtn];
   controls.forEach((control) => { control.disabled = true; });
   formError.textContent = "";
   cleanupMessage.textContent = "Deleting local report...";
@@ -369,6 +409,7 @@ clearJobBtn.addEventListener("click", async () => {
     pollTimer = null;
     currentJobId = null;
     currentJobStatus = null;
+    savedReviewContext = null;
     hasSavedExtraction = false;
     $("export-status").textContent = "";
     $("export-chat").checked = false;
@@ -377,11 +418,12 @@ clearJobBtn.addEventListener("click", async () => {
     fileInput.value = "";
     urlInput.value = "";
     goalInput.value = "General video review";
+    restoreReviewContext({ target_platform: "general", video_purpose: "General review" });
     showFileName();
     dropzone.classList.remove("drag");
     results.classList.add("hidden");
     statusCard.classList.add("hidden");
-    for (const id of ["trace", "trace-done", "facts", "summary-text", "scenes", "transcript", "report-sections", "warnings", "analyzer-id", "score", "headline", "verdict", "report-goal", "status-title", "status-message"]) {
+    for (const id of ["trace", "trace-done", "facts", "summary-text", "scenes", "transcript", "report-sections", "warnings", "analyzer-id", "score", "headline", "verdict", "report-goal", "report-context", "status-title", "status-message"]) {
       clear($(id));
     }
     for (const id of ["scenes-details", "transcript-details"]) {
@@ -394,6 +436,7 @@ clearJobBtn.addEventListener("click", async () => {
     formError.textContent = err.message || "Could not delete the local report. Please retry.";
   } finally {
     controls.forEach((control) => { control.disabled = false; });
+    updatePurposeInput();
     webSearchInput.disabled = !webSearchAvailable;
     updateClearButton();
     if (!currentJobId) urlInput.focus();
@@ -426,9 +469,13 @@ function renderTrace(root, runs) {
 function render(job) {
   hasSavedExtraction = Boolean(job.video_summary);
   currentJobFilename = job.filename || "";
+  savedReviewContext = { target_platform: job.target_platform, video_purpose: job.video_purpose };
+  restoreReviewContext(savedReviewContext);
   $("export-status").textContent = "";
   renderSummary(job);
   $("report-goal").textContent = `Goal: ${job.goal?.trim() || "General video review"}`;
+  const platformLabel = [...platformSelect.options].find(option => option.value === job.target_platform)?.textContent || job.target_platform || "No specific platform / Other";
+  $("report-context").textContent = `Purpose: ${job.video_purpose || "General review"} · Platform: ${platformLabel}`;
   renderTrace($("trace-done"), job.agent_runs);
   renderPlan(job.report);
   if (job.blob_cleanup_pending) $("warnings").appendChild(el("div", "warning", "Temporary upload cleanup failed. Delete the report to retry Blob cleanup."));

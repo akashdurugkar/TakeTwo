@@ -1,10 +1,11 @@
 """Domain models: what Content Understanding extracts, and what TakeTwo produces."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
-Platform = Literal["instagram_reels", "tiktok", "youtube_shorts", "linkedin"]
+Platform = Literal["general", "instagram_reels", "tiktok", "youtube_shorts", "youtube", "linkedin", "website"]
+VideoPurpose = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
 
 # --------------------------------------------------------------------------
@@ -330,6 +331,7 @@ class Job(BaseModel):
     filename: str = ""
     source_url: str = ""
     target_platform: Platform = "instagram_reels"
+    video_purpose: VideoPurpose = "General review"
     goal: str = ""
     use_web_search: bool = True
     stage_message: str = ""

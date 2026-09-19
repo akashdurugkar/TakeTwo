@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>TakeTwo - Video analysis &amp; creative direction</title>
-<link rel="stylesheet" href="/static/styles.css?v=edit-plan-1" />
+<link rel="stylesheet" href="/static/styles.css?v=video-purpose-1" />
 </head>
 <body>
 <header>
@@ -34,12 +34,28 @@
         Up to 4 GB and 2 hours. Maximum resolution: 1920 x 1920 pixels; resize 4K video to 1920 x 1080 (landscape) or 1080 x 1920 (portrait).
       </p>
 
-      <div class="row">
+      <div class="row review-context">
         <div>
-          <label for="platform">Target platform</label>
+          <label for="video-purpose">Video purpose</label>
+          <select id="video-purpose">
+            <option value="General review">General review</option>
+            <option value="Product demo">Product demo</option>
+            <option value="Marketing / campaign">Marketing / campaign</option>
+            <option value="Tutorial / explainer">Tutorial / explainer</option>
+            <option value="Presentation">Presentation</option>
+            <option value="Social / creator video">Social / creator video</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="platform">Publishing platform</label>
           <select id="platform"></select>
         </div>
-        <div class="grow">
+        <div id="custom-purpose-field" class="hidden">
+          <label for="custom-purpose">Describe the video purpose</label>
+          <input type="text" id="custom-purpose" maxlength="200" placeholder="e.g. Customer onboarding or internal update" disabled />
+        </div>
+        <div class="review-goal">
           <label for="goal">What are you trying to achieve?</label>
           <input type="text" id="goal" value="General video review" placeholder="General video review" />
         </div>
@@ -108,6 +124,7 @@
       </div>
       <p class="source">Creative Director</p>
       <p class="source" id="report-goal"></p>
+      <p class="source" id="report-context"></p>
       <div id="warnings"></div>
       <div class="score-row">
         <div class="score" id="score" title="Critic editorial score out of 100" aria-label="Critic editorial score out of 100"></div>
@@ -185,10 +202,10 @@
 
 <script src="/static/vendor/marked.umd.js?v=17.0.1"></script>
 <script src="/static/vendor/purify.min.js?v=3.3.1"></script>
-<script src="/static/director-chat.js?v=director-chat-2"></script>
+<script src="/static/director-chat.js?v=video-purpose-1"></script>
 <script src="/static/edit-plan.js?v=edit-plan-1"></script>
-<script src="/static/report-export.js?v=pdf-design-2"></script>
+<script src="/static/report-export.js?v=video-purpose-1"></script>
 <script src="/static/blob-upload.js?v=blob-upload-1"></script>
-<script src="/static/app.js?v=edit-plan-1"></script>
+<script src="/static/app.js?v=taketwo-status-1"></script>
 </body>
 </html>
