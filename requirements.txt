@@ -1,0 +1,14 @@
+fastapi>=0.115
+uvicorn>=0.34
+httpx>=0.28
+pydantic>=2.9
+pydantic-settings>=2.6
+python-multipart>=0.0.20
+python-dotenv>=1.0
+agent-framework-core>=1.18.0
+agent-framework-openai>=1.14.0
+openai>=3.13.0
+azure-storage-blob>=12.25,<13
+azure-identity>=1.21,<2
+aiohttp>=3.11,<4
+cryptography==46.0.3; sys_platform == 'win32' and platform_machine == 'ARM64'

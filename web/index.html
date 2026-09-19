@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TakeTwo - Video analysis &amp; creative direction</title>
+<link rel="stylesheet" href="/static/styles.css?v=edit-plan-1" />
+</head>
+<body>
+<header>
+  <h1>TakeTwo</h1>
+  <p class="tagline">
+    <span class="pill">Content Understanding</span> tells you what <em>is</em> in the video.
+    <span class="pill pill-accent">Creative Director</span> tells you how to make it better.
+  </p>
+  <p id="health" class="health"></p>
+</header>
+
+<main>
+  <section class="card" id="upload-card">
+    <h2>1. Upload a video</h2>
+    <form id="analyze-form">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska" hidden />
+        <span id="dropzone-label">Drop a video here, or click to browse</span>
+      </label>
+
+      <div class="or">or</div>
+
+      <label for="video-url">Direct video file URL</label>
+      <input type="url" id="video-url" placeholder="https://example.com/my-video.mp4" aria-describedby="video-url-help" />
+      <p id="video-url-help" class="source">
+        Direct HTTP(S) video download links, including Azure Blob URLs with a valid read-only SAS for private files. The link must be accessible to Content Understanding; YouTube and social-media page links are not supported.
+        Up to 4 GB and 2 hours. Maximum resolution: 1920 x 1920 pixels; resize 4K video to 1920 x 1080 (landscape) or 1080 x 1920 (portrait).
+      </p>
+
+      <div class="row">
+        <div>
+          <label for="platform">Target platform</label>
+          <select id="platform"></select>
+        </div>
+        <div class="grow">
+          <label for="goal">What are you trying to achieve?</label>
+          <input type="text" id="goal" value="General video review" placeholder="General video review" />
+        </div>
+      </div>
+
+      <label class="web-option" for="web-search">
+        <input type="checkbox" id="web-search" disabled />
+        Web research
+      </label>
+      <p class="source">Public queries go to Bing outside Azure's data boundary. Additional charges apply.</p>
+
+      <div class="form-actions">
+        <button type="submit" id="submit">Analyze video</button>
+        <button type="button" id="clear-job" class="delete-btn hidden" title="Delete this local report and clear the selected upload">Clear video and delete report</button>
+      </div>
+    </form>
+    <p id="form-error" class="error"></p>
+    <p id="cleanup-message" class="source" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card status hidden" id="status-card">
+    <div class="status-head">
+      <div class="spinner"></div>
+      <div>
+        <strong id="status-title">Working…</strong>
+        <p id="status-message"></p>
+      </div>
+    </div>
+    <ol class="trace" id="trace"></ol>
+    <progress id="upload-progress" class="hidden" max="1" value="0" aria-label="Video upload progress"></progress>
+    <button type="button" id="cancel-upload" class="copy-btn hidden">Cancel upload</button>
+  </section>
+
+  <section class="hidden" id="results">
+    <div class="result-toolbar">
+    <div class="result-tabs" role="tablist" aria-label="Video workspace">
+      <button type="button" id="report-tab" role="tab" aria-selected="true" aria-controls="report-view">Report</button>
+      <button type="button" id="chat-tab" role="tab" aria-selected="false" aria-controls="director-chat" tabindex="-1" disabled>Director chat</button>
+    </div>
+    <div class="export-controls">
+      <label class="web-option" for="export-chat"><input type="checkbox" id="export-chat" /> Include chat</label>
+      <button type="button" id="export-pdf" class="copy-btn" disabled>Export PDF</button>
+    </div>
+    </div>
+    <p id="export-status" class="source" role="status" aria-live="polite"></p>
+    <div id="report-view" role="tabpanel" aria-labelledby="report-tab">
+    <div class="card" id="summary-card">
+      <h2>2. What <em>is</em> in the video</h2>
+      <p class="source">Extracted by Azure AI Content Understanding · analyzer <code id="analyzer-id"></code></p>
+      <div class="facts" id="facts"></div>
+      <p id="summary-text" class="summary-text"></p>
+      <details id="scenes-details">
+        <summary>Scene breakdown</summary>
+        <ol id="scenes"></ol>
+      </details>
+      <details id="transcript-details">
+        <summary>Transcript</summary>
+        <ul id="transcript"></ul>
+      </details>
+    </div>
+
+    <div class="card" id="report-card">
+      <div class="report-heading-row">
+        <h2>3. Video improvement plan</h2>
+        <button type="button" id="discuss-report" class="copy-btn">Discuss with Director</button>
+      </div>
+      <p class="source">Creative Director</p>
+      <p class="source" id="report-goal"></p>
+      <div id="warnings"></div>
+      <div class="score-row">
+        <div class="score" id="score" title="Critic editorial score out of 100" aria-label="Critic editorial score out of 100"></div>
+        <div>
+          <p id="headline" class="headline"></p>
+          <p id="verdict"></p>
+        </div>
+      </div>
+      <ol class="trace trace-done" id="trace-done"></ol>
+      <div id="report-sections"></div>
+    </div>
+    </div>
+
+    <section id="director-chat" class="director-chat hidden" role="tabpanel" aria-labelledby="chat-tab">
+      <div class="chat-heading-row">
+        <div>
+          <h2 id="chat-heading">Creative Director</h2>
+          <p class="source" id="chat-context"></p>
+        </div>
+        <details id="chat-options" class="chat-options">
+          <summary aria-label="Conversation options" title="Conversation options">Options</summary>
+          <div class="chat-options-menu">
+            <button type="button" id="chat-refresh">Refresh conversation</button>
+            <button type="button" id="chat-reextract">Re-extract video...</button>
+          </div>
+        </details>
+      </div>
+      <div class="chat-goal-bar">
+        <span>Goal</span><span id="chat-active-goal"></span>
+        <button type="button" id="chat-edit-goal" aria-expanded="false" aria-controls="chat-goal-editor">Change</button>
+      </div>
+      <div id="chat-goal-editor" class="chat-goal-editor hidden">
+        <label for="chat-goal">New conversation goal</label>
+        <div class="chat-goal-row">
+          <input type="text" id="chat-goal" maxlength="500" />
+          <button type="button" id="chat-update-goal">Apply goal</button>
+          <button type="button" id="chat-cancel-goal">Cancel</button>
+        </div>
+      </div>
+      <div id="chat-scroll" class="chat-scroll" tabindex="0" aria-label="Conversation messages">
+        <div id="chat-empty" class="chat-empty">
+          <span class="chat-monogram" aria-hidden="true">D</span>
+          <h3>What would you like to work on?</h3>
+          <div class="chat-starters" aria-label="Suggested questions">
+            <button type="button" data-chat-prompt="What is the single most important change you recommend, and why?">What should I change first?</button>
+            <button type="button" data-chat-prompt="Which recommendations can I implement without reshooting?">Improve it without reshooting</button>
+            <button type="button" data-chat-prompt="Give me two alternative opening hooks, grounded in this video's content.">Try another opening</button>
+          </div>
+        </div>
+        <ol id="chat-turns" class="chat-turns" aria-label="Director conversation"></ol>
+      </div>
+      <button type="button" id="chat-latest" class="chat-latest hidden">Latest reply</button>
+      <form id="director-chat-form">
+        <div class="chat-composer">
+          <label for="chat-message" class="sr-only">Message the Creative Director</label>
+          <textarea id="chat-message" rows="2" maxlength="2000" placeholder="Ask a question or describe a change..."></textarea>
+          <div class="chat-composer-actions">
+            <label class="web-option" for="chat-web-search" title="Public queries go to Bing outside Azure's data boundary. Additional charges apply.">
+              <input type="checkbox" id="chat-web-search" /> Search web
+            </label>
+            <span id="chat-character-count" class="chat-character-count">0 / 2000</span>
+            <button type="submit" id="chat-send">Send</button>
+          </div>
+        </div>
+        <p id="chat-web-notice" class="source hidden">Public queries go to Bing outside Azure's data boundary. Additional charges apply.</p>
+        <div class="chat-footer">
+          <p id="chat-status" role="status" aria-live="polite"></p>
+          <span id="chat-extraction-status">Using saved extraction</span>
+        </div>
+        <p id="chat-error" class="error" role="alert"></p>
+      </form>
+    </section>
+  </section>
+</main>
+
+<script src="/static/vendor/marked.umd.js?v=17.0.1"></script>
+<script src="/static/vendor/purify.min.js?v=3.3.1"></script>
+<script src="/static/director-chat.js?v=director-chat-2"></script>
+<script src="/static/edit-plan.js?v=edit-plan-1"></script>
+<script src="/static/report-export.js?v=pdf-design-2"></script>
+<script src="/static/blob-upload.js?v=blob-upload-1"></script>
+<script src="/static/app.js?v=edit-plan-1"></script>
+</body>
+</html>
